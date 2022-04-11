@@ -1,26 +1,108 @@
-import React from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import GoogleLogo from "../../Assets/Image/google.svg";
+import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+import { auth } from "../../firebase/firebase.init";
+
+const provider = new GoogleAuthProvider();
 
 const Signup = () => {
   const navigate = useNavigate();
+  const [email,setEmail] = useState({value:'',error:''})
+  const [password,setPassword] = useState({value:'',error:''})
+  const [confirmPassword,setConfirmPassword] = useState({value:'',error:''})
+  
 
+  const googleAuth = () => {
+    signInWithPopup(auth, provider)
+      .then((result) => {
+        const user = result.user;
+        console.log(user)
+        navigate('/')
+      }).catch((error) => {
+        const errorMessage = error.message;
+        console.log(errorMessage)
+      });
+  }
+
+  const handleEmail = emailInput =>{
+    if(/^\S+@\S+\.\S+$/.test(emailInput)){
+      setEmail({value: emailInput , error:''})
+    }else{
+      setEmail({value: ' ' , error:'Invalid Email'})
+    }
+  }
+
+  const handlePassword = passwordInput =>{
+    if(passwordInput.length < 7){
+      setPassword({value:'' , error:'Password must be 8 character or more'})
+    }else{
+
+      setPassword({value: passwordInput , error:''})
+    }
+  }
+
+  const handleConfirmPassword = confirmPasswordInput =>{
+    if(confirmPasswordInput === password.value){
+      setConfirmPassword({value: confirmPasswordInput , error:''})
+    }else{
+      setConfirmPassword({value: ' ' , error:'Password is do not matched'})
+
+    }
+  }
+
+  const handleToSignUP = event => {
+    event.preventDefault()
+    // const email = (event.target.email.value)
+    // const password = (event.target.password.value)
+    if(email.value === ''){
+      setEmail({value:'',error:'Email is required'})
+    }
+    if(password.value === ''){
+      setPassword({value:'',error:'Password is required'})
+    }
+
+
+    if(email.value && password.value && confirmPassword.value === password.value){
+
+    createUserWithEmailAndPassword(auth, email.value, password.value)
+      .then((userCredential) => {
+        // Signed in 
+        const user = userCredential.user;
+        console.log(user)
+        // ...
+      })
+      .catch((error) => {
+        const errorCode = error.code;
+        const errorMessage = error.message;
+        console.log(errorMessage)
+      })
+    }
+
+  }
+  console.log(email)
+  console.log(password)
+  console.log(confirmPassword)
   return (
     <div className='auth-form-container '>
       <div className='auth-form'>
         <h1>Sign Up</h1>
-        <form>
+        <form onSubmit={handleToSignUP}>
           <div className='input-field'>
             <label htmlFor='email'>Email</label>
             <div className='input-wrapper'>
-              <input type='email' name='email' id='email' />
+              <input type='email' name='email' id='email' onBlur={(event)=>handleEmail(event.target.value)} />
             </div>
+           { email?.error && <p className="error">{email.error}</p>}
           </div>
           <div className='input-field'>
             <label htmlFor='password'>Password</label>
             <div className='input-wrapper'>
-              <input type='password' name='password' id='password' />
+              <input type='password' name='password' id='password' onBlur={event => handlePassword(event.target.value)} />
             </div>
+            {
+              password?.error && <p className="error">{password.error}</p>
+            }
           </div>
           <div className='input-field'>
             <label htmlFor='confirm-password'>Confirm Password</label>
@@ -29,8 +111,10 @@ const Signup = () => {
                 type='password'
                 name='confirmPassword'
                 id='confirm-password'
+                onBlur={event => handleConfirmPassword(event.target.value)}
               />
             </div>
+            {confirmPassword?.error && <p className="error">{confirmPassword.error}</p>}
           </div>
           <button type='submit' className='auth-form-submit'>
             Sign Up
@@ -46,7 +130,7 @@ const Signup = () => {
           <div className='line-right' />
         </div>
         <div className='input-wrapper'>
-          <button className='google-auth'>
+          <button className='google-auth' onClick={googleAuth}>
             <img src={GoogleLogo} alt='' />
             <p> Continue with Google </p>
           </button>
